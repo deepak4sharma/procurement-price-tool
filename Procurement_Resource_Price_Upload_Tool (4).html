@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Procurement Resource * Price Upload Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    /* Matched exactly to Procurement Resource Analytical Tool palette */
+    --bg:       #f5f2ec;
+    --surface:  #fffef9;
+    --surface2: #eeeae0;
+    --ink:      #1a1610;
+    --ink2:     #6b6355;
+    --ink3:     #a09880;
+    --accent:   #c8390a;
+    --accent2:  #2855a0;
+    --gold:     #d4a820;
+    --border:   #d8d2c4;
+    --shadow:   rgba(26,22,16,0.10);
+    --r: 6px;
+
+    /* Legacy aliases — keep old selectors working without touching them.
+       Old token names map onto the new palette so warning/error stay vivid. */
+    --ink1:        var(--ink);
+    --paper:       var(--bg);
+    --paper-2:     var(--surface2);
+    --line:        var(--border);
+    --accent-1:    var(--accent);
+    --accent-2:    var(--accent2);
+    --accent-3:    #1a7a4a;
+    --accent-4:    var(--gold);
+    --accent-5:    #7b2d8b;
+    --accent-warn: #d97706;
+    --accent-err:  #b91c1c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.55;
+    padding: 0 0 60px;
+  }
+  .container { max-width: 980px; margin: 0 auto; padding: 28px 16px 0; }
+
+  /* ─────────── MASTHEAD (Procurement Resource style) ─────────── */
+  .masthead {
+    background: var(--ink);
+    color: var(--bg);
+    padding: 22px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 18px;
+    border-bottom: 4px solid var(--accent);
+  }
+  .masthead-left { display: flex; align-items: center; gap: 18px; }
+  .masthead-mark {
+    background: var(--accent);
+    color: #fff;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 1px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .masthead h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(22px, 4vw, 34px);
+    letter-spacing: 2.5px;
+    line-height: 1;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .masthead h1 .star { color: var(--gold); margin: 0 4px; }
+  .masthead-tagline {
+    font-size: 11px;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .masthead-tagline .by { color: var(--gold); font-weight: 600; }
+  .masthead-meta {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink3);
+    line-height: 1.7;
+    letter-spacing: 1px;
+  }
+  @media (max-width: 600px) {
+    .masthead { padding: 18px 20px; }
+    .masthead h1 { font-size: 20px; letter-spacing: 1.5px; }
+    .masthead-left { gap: 12px; }
+    .masthead-meta { display: none; }
+  }
+
+  /* Hide the old inline header — replaced by .masthead */
+  .header { display: none; }
+
+  /* ─────────── CARDS / SECTIONS ─────────── */
+  .card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+  }
+  h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 400;
+    color: var(--ink);
+    line-height: 1.1;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--ink);
+  }
+  .step-num {
+    background: transparent;
+    color: var(--accent);
+    font-family: 'Bebas Neue', sans-serif;
+    font-weight: 400;
+    font-size: 30px;
+    width: auto; height: auto;
+    border-radius: 0;
+    line-height: 1;
+    margin-right: 12px;
+    flex-shrink: 0;
+    letter-spacing: 1px;
+  }
+  h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    margin-top: 16px;
+    margin-bottom: 6px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 400;
+    color: var(--ink);
+  }
+
+  /* ─────────── FORM CONTROLS ─────────── */
+  .field { margin-bottom: 12px; }
+  .field label.lbl {
+    display: block;
+    font-size: 11px;
+    color: var(--ink2);
+    margin-bottom: 5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  input[type="file"], input[type="text"], input[type="number"], select, textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    font-size: 13px;
+    font-family: inherit;
+    background: #fff;
+    color: var(--ink1);
+  }
+  textarea { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; resize: vertical; }
+  input[type="file"] { padding: 6px; cursor: pointer; }
+  input:focus, select:focus, textarea:focus {
+    outline: 2px solid var(--accent-2);
+    outline-offset: -1px;
+    border-color: var(--accent-2);
+  }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 600px) { .row-3, .row-2 { grid-template-columns: 1fr; } }
+
+
+
+  /* ─────────── STATUS / ALERTS ─────────── */
+  .status { font-size: 11.5px; margin-top: 6px; min-height: 16px; letter-spacing: 0.2px; }
+  .status.ok { color: var(--accent-3); }
+  .status.warn { color: var(--accent-warn); }
+  .status.err { color: var(--accent-err); }
+
+  .alert {
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    margin-top: 12px;
+    line-height: 1.55;
+  }
+  .alert.warn { background: #fef3c7; color: #6e4c1f; border-left: 3px solid var(--accent-4); }
+  .alert.err { background: #fee2e2; color: #991b1b; border-left: 3px solid var(--accent-err); }
+  .alert.ok { background: #d1fae5; color: #065f46; border-left: 3px solid var(--accent-3); }
+
+  /* ─────────── BUTTONS ─────────── */
+  button.primary {
+    background: var(--accent-1);
+    color: #fff;
+    border: none;
+    padding: 11px 22px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: inherit;
+    transition: filter 0.15s, transform 0.1s;
+  }
+  button.primary:hover { filter: brightness(1.1); }
+  button.primary:active { transform: scale(0.98); }
+  button.secondary {
+    background: transparent;
+    color: var(--ink2);
+    border: 1px solid var(--line);
+    padding: 9px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    font-family: inherit;
+  }
+  button.secondary:hover { background: var(--paper-2); border-color: var(--accent-2); color: var(--accent-2); }
+
+  /* ─────────── TABLES ─────────── */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th {
+    background: var(--paper-2);
+    font-weight: 800;
+    position: sticky;
+    top: 0;
+    color: var(--ink1);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    font-size: 10px;
+  }
+  td { font-family: 'JetBrains Mono', ui-monospace, monospace; color: var(--ink2); }
+
+  .preview-wrap {
+    max-height: 280px;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    margin-top: 10px;
+    background: #fff;
+  }
+
+  /* ─────────── MISC ─────────── */
+  .checkbox { display: flex; align-items: center; gap: 6px; }
+  .checkbox input { width: auto; margin: 0; cursor: pointer; }
+  .checkbox label { margin: 0; cursor: pointer; font-size: 12px; color: var(--ink2); }
+
+  .actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .actions button.primary, .actions button.secondary { padding: 11px 18px; font-size: 11.5px; }
+
+  .summary-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  @media (max-width: 600px) { .summary-stats { grid-template-columns: 1fr 1fr; } }
+  .stat {
+    background: var(--ink1);
+    padding: 12px 14px;
+    border-radius: 7px;
+    color: var(--paper);
+  }
+  .stat-num {
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--accent-4);
+    letter-spacing: -0.5px;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 9.5px;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  .hint { font-size: 11.5px; color: var(--ink3); margin-top: 4px; line-height: 1.5; }
+  details { margin-top: 8px; }
+  details summary { cursor: pointer; font-size: 12px; color: var(--accent-2); font-weight: 600; }
+  details ul { margin-top: 8px; padding-left: 20px; font-size: 12px; }
+  details li { margin-bottom: 2px; }
+
+  .section-label {
+    font-size: 10.5px;
+    color: var(--ink3);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-top: 6px;
+    margin-bottom: 8px;
+  }
+  .swap-link {
+    font-size: 11px;
+    color: var(--accent-2);
+    cursor: pointer;
+    text-decoration: underline;
+    margin-left: 8px;
+  }
+
+  .product-summary {
+    margin-top: 12px;
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    background: #fff;
+  }
+  .product-summary table { font-size: 12px; }
+  .product-summary td { font-family: inherit; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .badge.ok { background: #d1fae5; color: #065f46; }
+  .badge.err { background: #fee2e2; color: #991b1b; }
+
+  /* ── Editable Product Id / Location Id cells ───────────────────────── */
+  .id-cell { display: flex; gap: 4px; align-items: center; }
+  .id-input {
+    flex: 1;
+    min-width: 0;
+    padding: 5px 7px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 11.5px;
+    background: #fff;
+    color: var(--ink1);
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .id-input:focus { outline: none; border-color: var(--accent-2); background: var(--paper); }
+  .id-input.overridden {
+    border-color: var(--accent-warn);
+    background: #fffbeb;
+    box-shadow: inset 0 0 0 1px var(--accent-4);
+  }
+  .id-input.missing {
+    border-color: var(--accent-err);
+    background: #fef2f2;
+  }
+  .id-input.missing::placeholder { color: var(--accent-err); font-style: italic; }
+  .id-reset {
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    width: 22px; height: 22px;
+    cursor: pointer;
+    color: var(--ink3);
+    font-size: 12px;
+    line-height: 1;
+    padding: 0;
+  }
+  .id-reset:hover:not(:disabled) {
+    background: #fef3c7;
+    border-color: var(--accent-warn);
+    color: var(--accent-warn);
+  }
+  .id-reset:disabled { opacity: 0.3; cursor: default; }
+  .id-preview-btn {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    color: var(--ink2);
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    font-family: inherit;
+  }
+  .id-preview-btn:hover { background: var(--accent-2); border-color: var(--accent-2); color: #fff; }
+  .bulk-loc-bar {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .bulk-loc-bar input[type="text"] {
+    width: 100px;
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    font-size: 11.5px;
+    margin: 0 6px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  .rowcount { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  /* ── Date filter (Procurement Resource style) ─────────────────────── */
+  .date-filter-bar {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent-4);
+    border-radius: 7px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+  }
+  .filter-row label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--ink2);
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+  .filter-row input[type="date"] {
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    color: var(--ink1);
+    background: #fff;
+    text-transform: none;
+  }
+  .filter-row input[type="date"]:focus {
+    outline: 2px solid var(--accent-2);
+    outline-offset: -1px;
+    border-color: var(--accent-2);
+  }
+  .filter-data-range {
+    font-size: 10.5px;
+    color: var(--ink3);
+    margin-left: auto;
+    font-style: italic;
+    letter-spacing: 0.3px;
+  }
+  .filter-data-range b {
+    color: var(--ink1);
+    font-style: normal;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+  .preset-btn {
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--ink2);
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    font-family: inherit;
+  }
+  .preset-btn:hover { background: var(--accent-1); border-color: var(--accent-1); color: #fff; }
+  .filter-status {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--accent-3);
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+
+  /* ─────────── FOOTER ─────────── */
+  .footer {
+    text-align: center;
+    color: var(--ink3);
+    font-size: 11px;
+    margin-top: 24px;
+    letter-spacing: 0.4px;
+  }
+  .footer .privacy {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    padding: 8px 14px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ─────────── MASTHEAD ─────────── -->
+<header class="masthead">
+  <div class="masthead-left">
+    <div class="masthead-mark">PRC</div>
+    <div>
+      <h1>PROCUREMENT RESOURCE <span class="star">*</span> PRICE UPLOAD TOOL</h1>
+      <div class="masthead-tagline">Designed by <span class="by">Deepak Sharma</span> · Built with AI</div>
+    </div>
+  </div>
+  <div class="masthead-meta">
+    <div>SOURCE FILE → UPLOAD FORMAT</div>
+    <div>RUNS 100% IN-BROWSER</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- (Old inline header removed — replaced by .masthead above) -->
+
+  <div class="card">
+    <h2><span class="step-num">1</span>Reference data</h2>
+
+    <div id="upload-mode">
+      <div class="field">
+        <label class="lbl">Product ID sheet <span style="color:#999;font-weight:400">— columns auto-detected from header</span></label>
+        <input type="file" id="productFile" accept=".xlsx,.xls,.csv" onchange="loadProducts(this.files[0])">
+        <div class="status" id="productStatus"></div>
+      </div>
+      <div class="field">
+        <label class="lbl">Country / Location ID sheet</label>
+        <input type="file" id="countryFile" accept=".xlsx,.xls,.csv" onchange="loadCountries(this.files[0])">
+        <div class="status" id="countryStatus"></div>
+      </div>
+      <div class="field">
+        <label class="lbl">Unit ID sheet <span style="color:#999;font-weight:400">— unit names like "USD/Mt"</span></label>
+        <input type="file" id="unitFile" accept=".xlsx,.xls,.csv" onchange="loadUnits(this.files[0])">
+        <div class="status" id="unitStatus"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <h2><span class="step-num">2</span>Source price file</h2>
+    <div class="field">
+      <label class="lbl">Upload the file containing prices, dates, product names, currency, and unit</label>
+      <input type="file" id="sourceFile" accept=".xlsx,.xls,.csv" onchange="loadSource(this.files[0])">
+      <div class="status" id="sourceStatus"></div>
+      <div id="sourcePreview"></div>
+    </div>
+    <div class="section-label">Core columns</div>
+    <div class="row-3">
+      <div class="field"><label class="lbl">Product name column #</label><input type="number" id="prodCol" min="1" value="1"></div>
+      <div class="field"><label class="lbl">Price column #</label><input type="number" id="priceCol" min="1" value="2"></div>
+      <div class="field"><label class="lbl">Date column #</label><input type="number" id="dateCol" min="1" value="3"></div>
+    </div>
+    <div class="section-label">Unit columns <span style="font-weight:400;text-transform:none;color:#999">— combined as currency + separator + unit</span></div>
+    <div class="row-2" id="unitColsRow">
+      <div class="field"><label class="lbl">Currency column #</label><input type="number" id="currencyCol" min="1" value="4"></div>
+      <div class="field"><label class="lbl">Unit column #</label><input type="number" id="unitCol" min="1" value="5"></div>
+    </div>
+    <div class="field" style="margin-top:8px">
+      <label class="lbl">Separator</label>
+      <input type="text" id="sep" value="/" style="width:80px" maxlength="3">
+    </div>
+    <div class="field checkbox" style="margin-top:10px">
+      <input type="checkbox" id="hasHeader" checked>
+      <label for="hasHeader">Source file has a header row (skip row 1)</label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="step-num">3</span>Country for this batch <span style="font-size:12px;color:#999;font-weight:400;margin-left:6px">→ Location Id column</span></h2>
+    <div class="field">
+      <label class="lbl">Country</label>
+      <select id="countrySelect"><option value="">— upload country sheet first —</option></select>
+
+    </div>
+
+  </div>
+
+  <div class="card">
+    <h2><span class="step-num">4</span>Product list <span style="font-size:12px;color:#999;font-weight:400;margin-left:6px">— one sheet per product in output</span></h2>
+    <p class="hint" style="margin-bottom:8px">Paste product names (one per line). Each product becomes its own sheet. Leave empty to include every product found in the source file.</p>
+    <textarea id="productList" rows="8" placeholder="Heptanoic acid&#10;2-ethyl hexanoic acid&#10;Acetic acid" oninput="updateProductCount()"></textarea>
+    <div style="display:flex;gap:10px;margin-top:8px;align-items:center;flex-wrap:wrap">
+      <span class="hint" id="productListCount">0 products listed</span>
+      <button class="secondary" onclick="useAllSourceProducts()">Use all products from source</button>
+      <button class="secondary" onclick="document.getElementById('productList').value=''; updateProductCount();">Clear</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="step-num">5</span>Generate &amp; download</h2>
+    <button class="primary" onclick="generate()">Generate workbook</button>
+    <div id="results"></div>
+  </div>
+
+  <div class="footer">
+    <div class="privacy">🔒 100% private · Files never leave your browser</div>
+    <div style="margin-top:6px;">Part of the Procurement Resource toolkit · Designed by Deepak Sharma · Built with AI</div>
+  </div>
+
+</div>
+
+<script>
+const state = {
+  productMap: new Map(), productSampleKeys: [],
+  countryList: [], countrySampleKeys: [],
+  unitMap: new Map(), unitSampleKeys: [],
+  sourceRows: null, workbookData: null,
+  unmatchedProducts: null, unmatchedUnits: null,
+  productListMissing: null, mode: 'upload'
+};
+
+
+
+async function readSheet(file) {
+  // ─────────────────────────────────────────────────────────────────────────
+  // v2 DATE PARSING — bulletproof against browser timezones.
+  //
+  // PROBLEM: With cellDates:true, SheetJS returns JS Date objects. In some
+  // browser/timezone combos these are at LOCAL midnight (not UTC midnight).
+  // Calling getDate()/getMonth()/getFullYear() on them then shifts the
+  // calendar date by one day, producing the bug where every value pairs
+  // with the date from one row earlier in the source.
+  //
+  // FIX: Read with cellDates:false so date cells come through as raw Excel
+  // serial numbers (e.g. 45658.0 = Jan 1, 2025). These are pure integers
+  // with zero timezone in them. We tag each date cell with a sentinel
+  // {__excelDate:true, y, m, d} object that downstream code (formatDate)
+  // recognises and formats correctly. Non-date cells pass through unchanged.
+  // ─────────────────────────────────────────────────────────────────────────
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, {type: 'array', cellDates: false, cellNF: true});
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  if (!ws || !ws['!ref']) return [];
+  const range = XLSX.utils.decode_range(ws['!ref']);
+
+  const rows = [];
+  for (let R = range.s.r; R <= range.e.r; R++) {
+    const row = [];
+    for (let C = range.s.c; C <= range.e.c; C++) {
+      const cellRef = XLSX.utils.encode_cell({r: R, c: C});
+      const cell = ws[cellRef];
+      if (!cell) { row.push(''); continue; }
+
+      // Detect a numeric cell with a date format → convert via SSF
+      const looksLikeDateFormat = cell.z &&
+        /[ymdhMs]/i.test(String(cell.z)) &&
+        !/^[#0,.\-+()% ]+$/.test(String(cell.z));
+
+      if (cell.t === 'n' && typeof cell.v === 'number' && looksLikeDateFormat
+          && XLSX.SSF && XLSX.SSF.parse_date_code) {
+        try {
+          const dc = XLSX.SSF.parse_date_code(cell.v);
+          if (dc && dc.y && dc.m) {
+            row.push({__excelDate: true, y: dc.y, m: dc.m, d: dc.d});
+            continue;
+          }
+        } catch (_) { /* fall through */ }
+      }
+      // Also handle numeric cells without explicit date format but in
+      // Excel-serial range — useful for source files where dates are stored
+      // as raw numbers
+      if (cell.t === 'n' && typeof cell.v === 'number' && cell.v > 25569 && cell.v < 80000
+          && XLSX.SSF && XLSX.SSF.parse_date_code) {
+        // Heuristic: only treat as date if cell formatting hints at it OR
+        // if the value has no decimal portion (whole-day integer). This
+        // avoids accidentally treating prices like 30000.50 as dates.
+        if (looksLikeDateFormat || cell.v === Math.floor(cell.v)) {
+          // Without a date format hint, only convert if the value looks
+          // very date-like (whole number in the range). Skip otherwise.
+          if (looksLikeDateFormat) {
+            try {
+              const dc = XLSX.SSF.parse_date_code(cell.v);
+              if (dc && dc.y && dc.m) {
+                row.push({__excelDate: true, y: dc.y, m: dc.m, d: dc.d});
+                continue;
+              }
+            } catch (_) {}
+          }
+        }
+      }
+      // Non-date cell: pass through the raw value (string or number)
+      row.push(cell.v !== undefined ? cell.v : '');
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+
+function setStatus(id, msg, cls) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'status ' + (cls || '');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function normalizeUnit(s) {
+  return String(s).toLowerCase().replace(/\s+/g, '').trim();
+}
+
+function detectColumns(rows, idHints, nameHints) {
+  if (!rows || !rows.length) return {nameCol: 0, idCol: 1, headerName: '', headerId: ''};
+  const header = (rows[0] || []).map(h => String(h ?? '').toLowerCase().trim());
+  let idCol = -1, nameCol = -1;
+  for (let i = 0; i < header.length; i++) {
+    if (idCol === -1 && idHints.some(h => header[i].includes(h))) idCol = i;
+  }
+  for (let i = 0; i < header.length; i++) {
+    if (i !== idCol && nameCol === -1 && nameHints.some(h => header[i].includes(h))) nameCol = i;
+  }
+  if (idCol === -1 || nameCol === -1) {
+    const samples = rows.slice(1, 6).filter(r => r && r.length >= 2);
+    if (samples.length) {
+      const col0Numeric = samples.every(r => r[0] !== '' && !isNaN(parseFloat(r[0])) && isFinite(r[0]));
+      const col1Numeric = samples.every(r => r[1] !== '' && !isNaN(parseFloat(r[1])) && isFinite(r[1]));
+      if (col0Numeric && !col1Numeric) { idCol = 0; nameCol = 1; }
+      else if (!col0Numeric && col1Numeric) { idCol = 1; nameCol = 0; }
+      else { idCol = (idCol === -1 ? 1 : idCol); nameCol = (nameCol === -1 ? 0 : nameCol); }
+    } else {
+      if (idCol === -1) idCol = 1;
+      if (nameCol === -1) nameCol = 0;
+    }
+  }
+  return { nameCol, idCol,
+    headerName: rows[0] && rows[0][nameCol] !== undefined ? String(rows[0][nameCol]) : `Col ${nameCol+1}`,
+    headerId: rows[0] && rows[0][idCol] !== undefined ? String(rows[0][idCol]) : `Col ${idCol+1}` };
+}
+
+async function loadProducts(file) {
+  if (!file) return;
+  try {
+    const rows = await readSheet(file);
+    const det = detectColumns(rows, ['id','code','key'], ['name','product']);
+    state.productMap.clear(); state.productSampleKeys = [];
+    let count = 0;
+    for (let i = 1; i < rows.length; i++) {
+      const name = String(rows[i][det.nameCol] ?? '').trim();
+      const code = String(rows[i][det.idCol] ?? '').trim();
+      if (name && code) { state.productMap.set(name.toLowerCase(), code); if (state.productSampleKeys.length < 5) state.productSampleKeys.push(name); count++; }
+    }
+    document.getElementById('productStatus').innerHTML = `<span class="ok">Loaded ${count} products</span> <span style="color:#999">(name=${escapeHtml(det.headerName)}, id=${escapeHtml(det.headerId)})</span> <span class="swap-link" onclick="swapProductCols()">swap?</span>`;
+    state._productLastRows = rows; state._productCols = det;
+  } catch (e) { setStatus('productStatus', 'Error: ' + e.message, 'err'); }
+}
+function swapProductCols() {
+  const c = state._productCols; if (!c) return;
+  state._productCols = {nameCol: c.idCol, idCol: c.nameCol, headerName: c.headerId, headerId: c.headerName};
+  reloadProducts();
+}
+function reloadProducts() {
+  const rows = state._productLastRows, det = state._productCols;
+  if (!rows || !det) return;
+  state.productMap.clear(); state.productSampleKeys = [];
+  let count = 0;
+  for (let i = 1; i < rows.length; i++) {
+    const name = String(rows[i][det.nameCol] ?? '').trim();
+    const code = String(rows[i][det.idCol] ?? '').trim();
+    if (name && code) { state.productMap.set(name.toLowerCase(), code); if (state.productSampleKeys.length < 5) state.productSampleKeys.push(name); count++; }
+  }
+  document.getElementById('productStatus').innerHTML = `<span class="ok">Loaded ${count} products</span> <span style="color:#999">(name=${escapeHtml(det.headerName)}, id=${escapeHtml(det.headerId)})</span> <span class="swap-link" onclick="swapProductCols()">swap?</span>`;
+}
+
+async function loadCountries(file) {
+  if (!file) return;
+  try {
+    const rows = await readSheet(file);
+    const det = detectColumns(rows, ['id','location'], ['name','country']);
+    state.countryList = []; state.countrySampleKeys = [];
+    for (let i = 1; i < rows.length; i++) {
+      const name = String(rows[i][det.nameCol] ?? '').trim();
+      const id = String(rows[i][det.idCol] ?? '').trim();
+      if (name && id) state.countryList.push({name, id});
+    }
+    const sel = document.getElementById('countrySelect');
+    sel.innerHTML = '<option value="">— select country —</option>' + state.countryList.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)} (id ${escapeHtml(c.id)})</option>`).join('');
+    document.getElementById('countryStatus').innerHTML = `<span class="ok">Loaded ${state.countryList.length} countries</span> <span style="color:#999">(name=${escapeHtml(det.headerName)}, id=${escapeHtml(det.headerId)})</span> <span class="swap-link" onclick="swapCountryCols()">swap?</span>`;
+    state._countryLastRows = rows; state._countryCols = det;
+  } catch (e) { setStatus('countryStatus', 'Error: ' + e.message, 'err'); }
+}
+function swapCountryCols() {
+  const c = state._countryCols; if (!c) return;
+  state._countryCols = {nameCol: c.idCol, idCol: c.nameCol, headerName: c.headerId, headerId: c.headerName};
+  reloadCountries();
+}
+function reloadCountries() {
+  const rows = state._countryLastRows, det = state._countryCols;
+  if (!rows || !det) return;
+  state.countryList = [];
+  for (let i = 1; i < rows.length; i++) {
+    const name = String(rows[i][det.nameCol] ?? '').trim();
+    const id = String(rows[i][det.idCol] ?? '').trim();
+    if (name && id) state.countryList.push({name, id});
+  }
+  const sel = document.getElementById('countrySelect');
+  sel.innerHTML = '<option value="">— select country —</option>' + state.countryList.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)} (id ${escapeHtml(c.id)})</option>`).join('');
+  document.getElementById('countryStatus').innerHTML = `<span class="ok">Loaded ${state.countryList.length} countries</span> <span style="color:#999">(name=${escapeHtml(det.headerName)}, id=${escapeHtml(det.headerId)})</span> <span class="swap-link" onclick="swapCountryCols()">swap?</span>`;
+}
+
+async function loadUnits(file) {
+  if (!file) return;
+  try {
+    const rows = await readSheet(file);
+    const det = detectColumns(rows, ['id','code'], ['unit','name']);
+    state.unitMap.clear(); state.unitSampleKeys = [];
+    let count = 0;
+    for (let i = 1; i < rows.length; i++) {
+      const name = String(rows[i][det.nameCol] ?? '').trim();
+      const id = String(rows[i][det.idCol] ?? '').trim();
+      if (name && id) { state.unitMap.set(normalizeUnit(name), id); if (state.unitSampleKeys.length < 8) state.unitSampleKeys.push(name); count++; }
+    }
+    const sample = state.unitSampleKeys.length ? ` <span style="color:#999">(e.g. ${state.unitSampleKeys.slice(0,3).map(escapeHtml).join(', ')})</span>` : '';
+    document.getElementById('unitStatus').innerHTML = `<span class="ok">Loaded ${count} units</span> <span style="color:#999">(name=${escapeHtml(det.headerName)}, id=${escapeHtml(det.headerId)})</span>${sample} <span class="swap-link" onclick="swapUnitCols()">swap?</span>`;
+    state._unitLastRows = rows; state._unitCols = det;
+  } catch (e) { setStatus('unitStatus', 'Error: ' + e.message, 'err'); }
+}
+function swapUnitCols() {
+  const c = state._unitCols; if (!c) return;
+  state._unitCols = {nameCol: c.idCol, idCol: c.nameCol, headerName: c.headerId, headerId: c.headerName};
+  reloadUnits();
+}
+function reloadUnits() {
+  const rows = state._unitLastRows, det = state._unitCols;
+  if (!rows || !det) return;
+  state.unitMap.clear(); state.unitSampleKeys = [];
+  let count = 0;
+  for (let i = 1; i < rows.length; i++) {
+    const name = String(rows[i][det.nameCol] ?? '').trim();
+    const id = String(rows[i][det.idCol] ?? '').trim();
+    if (name && id) { state.unitMap.set(normalizeUnit(name), id); if (state.unitSampleKeys.length < 8) state.unitSampleKeys.push(name); count++; }
+  }
+  const sample = state.unitSampleKeys.length ? ` <span style="color:#999">(e.g. ${state.unitSampleKeys.slice(0,3).map(escapeHtml).join(', ')})</span>` : '';
+  document.getElementById('unitStatus').innerHTML = `<span class="ok">Loaded ${count} units</span> <span style="color:#999">(name=${escapeHtml(det.headerName)}, id=${escapeHtml(det.headerId)})</span>${sample} <span class="swap-link" onclick="swapUnitCols()">swap?</span>`;
+}
+
+async function loadSource(file) {
+  if (!file) return;
+  try {
+    const rows = await readSheet(file);
+    state.sourceRows = rows;
+    setStatus('sourceStatus', `Loaded ${rows.length} rows`, 'ok');
+    const previewDiv = document.getElementById('sourcePreview');
+    const maxCols = Math.max(...rows.slice(0, 4).map(r => r ? r.length : 0));
+    let html = '<div class="preview-wrap"><table><thead><tr>';
+    for (let c = 1; c <= maxCols; c++) html += `<th>Col ${c}</th>`;
+    html += '</tr></thead><tbody>';
+    rows.slice(0, 4).forEach(row => {
+      html += '<tr>';
+      for (let c = 0; c < maxCols; c++) {
+        const val = row && row[c] !== undefined ? row[c] : '';
+        // v2: __excelDate sentinel and Date both go through formatDate
+        const isDateVal = (val && typeof val === 'object' && val.__excelDate) || val instanceof Date;
+        const display = isDateVal ? formatDate(val) : String(val);
+        html += `<td>${escapeHtml(display.slice(0, 30))}</td>`;
+      }
+      html += '</tr>';
+    });
+    html += '</tbody></table></div><p class="hint">Use the column numbers above to fill in the fields below.</p>';
+    previewDiv.innerHTML = html;
+  } catch (e) { setStatus('sourceStatus', 'Error: ' + e.message, 'err'); }
+}
+
+// ── Convert a date-bearing value to an Excel serial number ───────────────
+// Accepts the same value types formatDate handles. Returns:
+//   - integer Excel serial (e.g. 45658 for 1-Jan-2025) when the value can
+//     be resolved to a calendar date
+//   - null when the value is empty / unparseable / not a date
+//
+// Why we need this: writing dates as serial numbers with a date number
+// format on the cell makes them real Excel dates — sortable, filterable,
+// usable in DATE() formulas. Writing them as text strings ("31-12-2025")
+// produces a column you have to "Text to Columns" to fix.
+function dateToExcelSerial(v) {
+  if (v === '' || v === null || v === undefined) return null;
+  if (v && typeof v === 'object' && v.__excelDate) {
+    return ymdToExcelSerial(v.y, v.m, v.d);
+  }
+  if (v instanceof Date && !isNaN(v)) {
+    return ymdToExcelSerial(v.getUTCFullYear(), v.getUTCMonth() + 1, v.getUTCDate());
+  }
+  if (typeof v === 'number' && v > 25569 && v < 80000) {
+    return Math.floor(v);
+  }
+  if (typeof v === 'string') {
+    const trimmed = v.trim();
+    if (!trimmed) return null;
+    const dmy = trimmed.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+    if (dmy) return ymdToExcelSerial(+dmy[3], +dmy[2], +dmy[1]);
+    const ymd = trimmed.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+    if (ymd) return ymdToExcelSerial(+ymd[1], +ymd[2], +ymd[3]);
+    const parsed = new Date(trimmed);
+    if (!isNaN(parsed) && /\d{4}/.test(trimmed)) {
+      return ymdToExcelSerial(parsed.getUTCFullYear(), parsed.getUTCMonth() + 1, parsed.getUTCDate());
+    }
+  }
+  return null;
+}
+
+// (year, month, day) → Excel serial. Excel's epoch (accounting for the
+// 1900 leap-year bug) is 30 Dec 1899 UTC. UTC math avoids any local-
+// timezone shifts.
+function ymdToExcelSerial(y, m, d) {
+  if (!y || !m || !d) return null;
+  const utc = Date.UTC(y, m - 1, d);
+  const epoch = Date.UTC(1899, 11, 30);
+  const serial = Math.round((utc - epoch) / 86400000);
+  return serial > 0 ? serial : null;
+}
+
+function formatDate(v) {
+  if (v === '' || v === null || v === undefined) return '';
+  // v2: handle the timezone-safe sentinel from the new readSheet logic
+  if (v && typeof v === 'object' && v.__excelDate) {
+    const d = String(v.d).padStart(2, '0');
+    const m = String(v.m).padStart(2, '0');
+    return `${d}-${m}-${v.y}`;
+  }
+  if (v instanceof Date && !isNaN(v)) {
+    // Fallback path: use UTC accessors to avoid local-tz day shift
+    const y = v.getUTCFullYear();
+    const m = String(v.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(v.getUTCDate()).padStart(2, '0');
+    return `${d}-${m}-${y}`;
+  }
+  if (typeof v === 'number' && v > 25569 && v < 80000) {
+    // Use SSF when available for timezone-proof conversion
+    if (typeof XLSX !== 'undefined' && XLSX.SSF && XLSX.SSF.parse_date_code) {
+      try {
+        const dc = XLSX.SSF.parse_date_code(v);
+        if (dc && dc.y && dc.m) {
+          return `${String(dc.d).padStart(2,'0')}-${String(dc.m).padStart(2,'0')}-${dc.y}`;
+        }
+      } catch (_) {}
+    }
+    // Last-resort fallback: epoch math (less safe across timezones)
+    const date = new Date(Math.round((v - 25569) * 86400 * 1000));
+    if (!isNaN(date)) {
+      const y = date.getUTCFullYear();
+      const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const d = String(date.getUTCDate()).padStart(2, '0');
+      return `${d}-${m}-${y}`;
+    }
+  }
+  if (typeof v === 'string') {
+    const trimmed = v.trim();
+    const dmy = trimmed.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+    if (dmy) return `${dmy[1].padStart(2,'0')}-${dmy[2].padStart(2,'0')}-${dmy[3]}`;
+    const ymd = trimmed.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+    if (ymd) return `${ymd[3].padStart(2,'0')}-${ymd[2].padStart(2,'0')}-${ymd[1]}`;
+    const parsed = new Date(trimmed);
+    if (!isNaN(parsed) && /\d{4}/.test(trimmed)) return formatDate(parsed);
+    return trimmed;
+  }
+  return String(v);
+}
+
+function parseProductList() {
+  return document.getElementById('productList').value.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+}
+function updateProductCount() {
+  const n = parseProductList().length;
+  document.getElementById('productListCount').textContent = `${n} product${n === 1 ? '' : 's'} listed`;
+}
+function useAllSourceProducts() {
+  if (!state.sourceRows) { alert('Upload the source price file first.'); return; }
+  const prodCol = parseInt(document.getElementById('prodCol').value) - 1;
+  const skipHeader = document.getElementById('hasHeader').checked;
+  const startIdx = skipHeader ? 1 : 0;
+  const set = new Set();
+  for (let i = startIdx; i < state.sourceRows.length; i++) {
+    const row = state.sourceRows[i]; if (!row) continue;
+    const name = String(row[prodCol] ?? '').trim();
+    if (name) set.add(name);
+  }
+  document.getElementById('productList').value = [...set].join('\n');
+  updateProductCount();
+}
+
+function sanitizeSheetName(name, used) {
+  let n = String(name || '').replace(/[\\\/\?\*\[\]:]/g, '_').trim();
+  n = n.replace(/^'+/, '').replace(/'+$/, '');
+  if (n.length > 31) n = n.slice(0, 31);
+  if (!n) n = 'Sheet';
+  let candidate = n, i = 2;
+  while (used.has(candidate.toLowerCase())) {
+    const suffix = ` (${i++})`;
+    candidate = n.slice(0, 31 - suffix.length) + suffix;
+  }
+  used.add(candidate.toLowerCase());
+  return candidate;
+}
+
+function generate() {
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.innerHTML = '';
+  if (!state.sourceRows) { resultsDiv.innerHTML = '<div class="alert err">Upload the source price file first.</div>'; return; }
+  const countryId = document.getElementById('countrySelect').value;
+  if (!countryId) { resultsDiv.innerHTML = '<div class="alert err">Select a country.</div>'; return; }
+  if (state.productMap.size === 0) { resultsDiv.innerHTML = '<div class="alert err">Upload the Product ID sheet.</div>'; return; }
+  if (state.unitMap.size === 0) { resultsDiv.innerHTML = '<div class="alert err">Upload the Unit ID sheet.</div>'; return; }
+  const prodCol = parseInt(document.getElementById('prodCol').value) - 1;
+  const priceCol = parseInt(document.getElementById('priceCol').value) - 1;
+  const dateCol = parseInt(document.getElementById('dateCol').value) - 1;
+  const currencyCol = parseInt(document.getElementById('currencyCol').value) - 1;
+  const unitCol = parseInt(document.getElementById('unitCol').value) - 1;
+  const sep = document.getElementById('sep').value || '/';
+  const skipHeader = document.getElementById('hasHeader').checked;
+  const startIdx = skipHeader ? 1 : 0;
+  const productList = parseProductList();
+  const useAll = productList.length === 0;
+  const productListLower = new Set(productList.map(p => p.toLowerCase()));
+  const grouped = new Map();
+  const unmatchedProducts = new Map();
+  const unmatchedUnits = new Map();
+  for (let i = startIdx; i < state.sourceRows.length; i++) {
+    const row = state.sourceRows[i];
+    if (!row || row.length === 0) continue;
+    const productName = String(row[prodCol] ?? '').trim();
+    const price = row[priceCol];
+    const date = row[dateCol];
+    const currency = String(row[currencyCol] ?? '').trim();
+    const unitName = String(row[unitCol] ?? '').trim();
+    const priceEmpty = price === '' || price === undefined || price === null;
+    if (!productName && priceEmpty) continue;
+    if (!useAll && !productListLower.has(productName.toLowerCase())) continue;
+    let productId = state.productMap.get(productName.toLowerCase()) || '';
+    if (!productId) unmatchedProducts.set(productName, (unmatchedProducts.get(productName) || 0) + 1);
+    const combined = `${currency}${sep}${unitName}`;
+    let unitId = state.unitMap.get(normalizeUnit(combined)) || state.unitMap.get(normalizeUnit(unitName)) || '';
+    if (!unitId) unmatchedUnits.set(combined, (unmatchedUnits.get(combined) || 0) + 1);
+    // Compute the date in two forms:
+    //   - 'Date' (string "DD-MM-YYYY")  → for the on-screen preview & filter
+    //   - '_DateSerial' (Excel serial)  → for writing real Excel date cells
+    //                                     so the column sorts chronologically
+    //                                     in Excel without Text-to-Columns
+    const dateSerial = dateToExcelSerial(date);
+    const rowObj = {
+      'Product Id': productId, 'Location Id': countryId,
+      'Price': typeof price === 'number' ? price : (priceEmpty ? '' : String(price).trim()),
+      'Date': formatDate(date), 'unit id': unitId,
+      // Sentinel: when present, the download path uses this as the cell's
+      // numeric value with a date format applied. Stripped before writing
+      // to plain CSV (see downloadCSV).
+      '_DateSerial': dateSerial
+    };
+    const key = productName.toLowerCase();
+    if (!grouped.has(key)) grouped.set(key, {
+      displayName: productName,
+      productId,                     // current (may be edited)
+      locationId: countryId,         // current (may be edited)
+      _autoProductId: productId,     // remember auto-mapped value for reset
+      _autoLocationId: countryId,    // remember auto-mapped value for reset
+      rows: []
+    });
+    grouped.get(key).rows.push(rowObj);
+  }
+  const listMissing = [];
+  if (!useAll) {
+    for (const name of productList) if (!grouped.has(name.toLowerCase())) listMissing.push(name);
+  }
+  state.workbookData = grouped;
+  state.unmatchedProducts = unmatchedProducts;
+  state.unmatchedUnits = unmatchedUnits;
+  state.productListMissing = listMissing;
+  // Reset filter on each generate so a fresh run starts unfiltered. The
+  // user can re-apply a filter from the preview if needed.
+  state._dateFilter = { from: '', to: '' };
+  renderResults();
+}
+
+function renderResults() {
+  const resultsDiv = document.getElementById('results');
+  const grouped = state.workbookData;
+  const totalRows = [...grouped.values()].reduce((s, p) => s + p.rows.length, 0);
+  const totalSheets = grouped.size;
+  let html = `<div class="summary-stats" style="margin-top:16px">
+    <div class="stat"><div class="stat-num">${totalSheets}</div><div class="stat-label">Sheets</div></div>
+    <div class="stat"><div class="stat-num">${totalRows}</div><div class="stat-label">Total rows</div></div>
+    <div class="stat"><div class="stat-num" style="color:${state.unmatchedProducts.size?'#dc2626':'#059669'}">${state.unmatchedProducts.size}</div><div class="stat-label">Products w/o ID</div></div>
+    <div class="stat"><div class="stat-num" style="color:${state.unmatchedUnits.size?'#dc2626':'#059669'}">${state.unmatchedUnits.size}</div><div class="stat-label">Unit strings w/o ID</div></div>
+  </div>`;
+  if (state.productListMissing && state.productListMissing.length) {
+    html += `<div class="alert warn"><strong>${state.productListMissing.length} pasted name${state.productListMissing.length>1?'s':''} not found in source.</strong> <details><summary>Show</summary><ul>${state.productListMissing.map(n => `<li>${escapeHtml(n)}</li>`).join('')}</ul></details></div>`;
+  }
+  if (state.unmatchedProducts.size > 0 || state.unmatchedUnits.size > 0) {
+    html += `<div class="alert warn"><strong>Some lookups failed.</strong> Rows still included with empty IDs.`;
+    if (state.unmatchedProducts.size > 0) {
+      const list = [...state.unmatchedProducts.entries()].sort((a,b) => b[1]-a[1]);
+      html += `<details><summary>${state.unmatchedProducts.size} unmatched product name${state.unmatchedProducts.size>1?'s':''}</summary><ul>${list.map(([n,c]) => `<li>${escapeHtml(n)} <span style="color:#999">× ${c}</span></li>`).join('')}</ul></details>`;
+    }
+    if (state.unmatchedUnits.size > 0) {
+      const list = [...state.unmatchedUnits.entries()].sort((a,b) => b[1]-a[1]);
+      const sample = state.unitSampleKeys.length ? `<p style="margin-top:6px;font-size:12px;color:#666">Reference units: <strong>${state.unitSampleKeys.map(escapeHtml).join(', ')}</strong></p>` : '';
+      html += `<details><summary>${state.unmatchedUnits.size} unmatched unit string${state.unmatchedUnits.size>1?'s':''}</summary><ul>${list.map(([n,c]) => `<li>${escapeHtml(n)} <span style="color:#999">× ${c}</span></li>`).join('')}</ul>${sample}</details>`;
+    }
+    html += `</div>`;
+  } else if (totalRows > 0) {
+    html += `<div class="alert ok">All ${totalRows} rows matched cleanly.</div>`;
+  }
+  if (grouped.size > 0) {
+    const keys = [...grouped.keys()];
+    state._previewKeys = keys;
+
+    // ── Date filter section ────────────────────────────────────────────
+    // Compute min/max dates across all rows so we can show the actual data
+    // range and pre-fill the filter inputs sensibly.
+    const range = computeDateRange(grouped);
+    if (range.min && range.max) {
+      state._dateRange = range;
+      // Initialize filter to "all" if not already set
+      if (!state._dateFilter) state._dateFilter = {from: '', to: ''};
+      const fromVal = state._dateFilter.from;
+      const toVal   = state._dateFilter.to;
+      html += `<h3>Date filter <span style="font-size:11px;color:#999;font-weight:400">— optional · download only rows in this range</span></h3>`;
+      html += `<div class="date-filter-bar">
+        <div class="filter-row">
+          <label>From: <input type="date" id="filterFrom" value="${escapeHtml(fromVal)}" oninput="onFilterChange()"></label>
+          <label>To: <input type="date" id="filterTo" value="${escapeHtml(toVal)}" oninput="onFilterChange()"></label>
+          <span class="filter-data-range">Data available: <b>${formatDateForDisplay(range.min)}</b> &nbsp;→&nbsp; <b>${formatDateForDisplay(range.max)}</b></span>
+        </div>
+        <div class="filter-row" style="margin-top:8px">
+          <span style="font-size:11px;color:#666;margin-right:4px">Quick presets:</span>
+          <button class="preset-btn" onclick="setFilterPreset('all')">All</button>
+          <button class="preset-btn" onclick="setFilterPreset('ytd')">YTD</button>
+          <button class="preset-btn" onclick="setFilterPreset('1y')">Last 12 months</button>
+          <button class="preset-btn" onclick="setFilterPreset('2y')">Last 2 years</button>
+          <button class="preset-btn" onclick="setFilterPreset('5y')">Last 5 years</button>
+          <span class="filter-status" id="filterStatus"></span>
+        </div>
+      </div>`;
+    }
+
+    html += '<h3>Workbook contents <span style="font-size:11px;color:#999;font-weight:400">— click row to preview · Product Id and Location Id are editable</span></h3>';
+    html += `<p class="hint" style="margin:0 0 8px 4px">
+      Auto-mapped values are pre-filled. Type a new value to override (yellow border = manually changed).
+      Click ↻ to restore the auto-mapped value. Edits flow through to the downloaded workbook.
+    </p>`;
+    html += '<div class="product-summary"><table><thead><tr>'
+         + '<th style="width:24%">Sheet (product)</th>'
+         + '<th style="width:22%">Product Id <span style="font-weight:400;color:#999">(editable)</span></th>'
+         + '<th style="width:22%">Location Id <span style="font-weight:400;color:#999">(editable)</span></th>'
+         + '<th style="width:13%">Rows <span style="font-weight:400;color:#999">(filtered/total)</span></th>'
+         + '<th style="width:19%">Preview</th>'
+         + '</tr></thead><tbody>';
+    keys.forEach((key, idx) => {
+      const p = grouped.get(key);
+      const pidOverridden = p.productId !== p._autoProductId;
+      const lidOverridden = p.locationId !== p._autoLocationId;
+      const pidMissing = !p.productId;
+      const lidMissing = !p.locationId;
+      html += `<tr data-key="${escapeHtml(key)}">
+        <td>${escapeHtml(p.displayName)}</td>
+        <td>
+          <div class="id-cell">
+            <input type="text"
+                   class="id-input ${pidOverridden ? 'overridden' : ''} ${pidMissing ? 'missing' : ''}"
+                   data-key="${escapeHtml(key)}"
+                   data-field="productId"
+                   value="${escapeHtml(p.productId)}"
+                   placeholder="${pidMissing ? 'missing — type ID' : ''}"
+                   onclick="event.stopPropagation()" />
+            <button class="id-reset" data-key="${escapeHtml(key)}" data-field="productId"
+                    title="Reset to auto-mapped value (${escapeHtml(p._autoProductId || '—')})"
+                    ${p._autoProductId === p.productId ? 'disabled' : ''}
+                    onclick="event.stopPropagation()">↻</button>
+          </div>
+        </td>
+        <td>
+          <div class="id-cell">
+            <input type="text"
+                   class="id-input ${lidOverridden ? 'overridden' : ''} ${lidMissing ? 'missing' : ''}"
+                   data-key="${escapeHtml(key)}"
+                   data-field="locationId"
+                   value="${escapeHtml(p.locationId)}"
+                   placeholder="${lidMissing ? 'missing — type ID' : ''}"
+                   onclick="event.stopPropagation()" />
+            <button class="id-reset" data-key="${escapeHtml(key)}" data-field="locationId"
+                    title="Reset to auto-mapped value (${escapeHtml(p._autoLocationId || '—')})"
+                    ${p._autoLocationId === p.locationId ? 'disabled' : ''}
+                    onclick="event.stopPropagation()">↻</button>
+          </div>
+        </td>
+        <td><span class="rowcount" data-key="${escapeHtml(key)}">${p.rows.length}</span></td>
+        <td><button class="id-preview-btn" onclick="previewSheet(${idx})">View</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+    // Bulk-apply Location Id to all products at once (handy when user wants
+    // to override the country for the whole batch in one click)
+    html += `<div class="bulk-loc-bar">
+      <span style="font-size:12px;color:#555">Bulk: set <b>Location Id</b> for every product →</span>
+      <input type="text" id="bulkLocId" placeholder="e.g. 6" style="width:100px;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:12px;margin:0 6px;font-family:ui-monospace,monospace">
+      <button class="secondary" style="padding:5px 12px" onclick="applyBulkLocationId()">Apply to all</button>
+      <span style="margin-left:14px;font-size:12px;color:#555">or → </span>
+      <button class="secondary" style="padding:5px 12px" onclick="resetAllOverrides()">↻ Reset all overrides</button>
+    </div>`;
+    html += '<h3 style="margin-top:16px">Sheet preview <span id="previewSheetName" style="font-size:12px;color:#666;font-weight:400"></span></h3>';
+    html += '<p class="hint">This is exactly how each downloaded sheet will look. Edits above are applied here in real time.</p>';
+    html += '<div id="sheetPreview"></div>';
+  }
+  html += `<div class="actions">
+    <button class="primary" onclick="downloadExcel()" title="One workbook · one sheet per product">📚 Download workbook (.xlsx, multi-sheet)</button>
+    <button class="primary" onclick="downloadCombinedExcel()" style="background:#1a7a4a" title="One workbook · all rows in a single sheet (ready to upload)">📄 Download combined (.xlsx, single sheet)</button>
+    <button class="secondary" onclick="downloadCSV()" title="Plain text CSV with all rows">Download flat CSV</button>
+  </div>`;
+  resultsDiv.innerHTML = html;
+  attachIdEditHandlers();
+  if (state._previewKeys && state._previewKeys.length) previewSheet(0);
+}
+
+// ── ID OVERRIDE HANDLERS ─────────────────────────────────────────────────
+// Wires up input + reset buttons in the workbook contents table.
+// Edits flow through to state.workbookData immediately, and every row of
+// the affected product is updated in place so the download reflects the
+// override.
+function attachIdEditHandlers() {
+  document.querySelectorAll('.id-input').forEach(input => {
+    input.addEventListener('input', e => updateProductField(
+      e.target.dataset.key,
+      e.target.dataset.field,
+      e.target.value
+    ));
+    // Don't trigger row-click preview when clicking inside the field
+    input.addEventListener('click', e => e.stopPropagation());
+  });
+  document.querySelectorAll('.id-reset').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const {key, field} = btn.dataset;
+      const p = state.workbookData.get(key);
+      if (!p) return;
+      const autoVal = field === 'productId' ? p._autoProductId : p._autoLocationId;
+      updateProductField(key, field, autoVal);
+      // Reflect in input element
+      const input = document.querySelector(`.id-input[data-key="${cssEscape(key)}"][data-field="${field}"]`);
+      if (input) input.value = autoVal;
+      btn.disabled = true;
+      input?.classList.remove('overridden');
+      input?.classList.toggle('missing', !autoVal);
+    });
+  });
+}
+
+function cssEscape(s) {
+  // Minimal CSS attribute-selector escape (just enough for our keys, which
+  // are lowercased product names). Avoids matching brittle backslash rules.
+  return String(s).replace(/(["\\])/g, '\\$1');
+}
+
+function updateProductField(key, field, newValue) {
+  const p = state.workbookData.get(key);
+  if (!p) return;
+  newValue = String(newValue || '').trim();
+  p[field] = newValue;
+  // Update every row of this product so download writes the new value
+  const colName = field === 'productId' ? 'Product Id' : 'Location Id';
+  p.rows.forEach(r => { r[colName] = newValue; });
+
+  // Visual feedback on the matching input + enable/disable its reset button
+  const autoVal = field === 'productId' ? p._autoProductId : p._autoLocationId;
+  const overridden = newValue !== autoVal;
+  const input = document.querySelector(`.id-input[data-key="${cssEscape(key)}"][data-field="${field}"]`);
+  if (input) {
+    input.classList.toggle('overridden', overridden);
+    input.classList.toggle('missing', !newValue);
+  }
+  const resetBtn = document.querySelector(`.id-reset[data-key="${cssEscape(key)}"][data-field="${field}"]`);
+  if (resetBtn) resetBtn.disabled = !overridden;
+
+  // If the currently-previewed sheet is the one we edited, refresh it live
+  const previewedIdx = state._previewedIdx;
+  if (previewedIdx !== undefined && state._previewKeys?.[previewedIdx] === key) {
+    previewSheet(previewedIdx);
+  }
+}
+
+function applyBulkLocationId() {
+  const v = document.getElementById('bulkLocId').value.trim();
+  if (!v) { alert('Type a Location Id first.'); return; }
+  if (!state.workbookData) return;
+  state.workbookData.forEach((p, key) => updateProductField(key, 'locationId', v));
+  // Sync all input boxes
+  document.querySelectorAll('.id-input[data-field="locationId"]').forEach(input => {
+    input.value = v;
+  });
+}
+
+function resetAllOverrides() {
+  if (!state.workbookData) return;
+  state.workbookData.forEach((p, key) => {
+    updateProductField(key, 'productId', p._autoProductId);
+    updateProductField(key, 'locationId', p._autoLocationId);
+  });
+  document.querySelectorAll('.id-input').forEach(input => {
+    const key = input.dataset.key;
+    const field = input.dataset.field;
+    const p = state.workbookData.get(key);
+    if (!p) return;
+    input.value = field === 'productId' ? p._autoProductId : p._autoLocationId;
+  });
+}
+
+// ── DATE FILTER HELPERS ────────────────────────────────────────────────
+// Stored row dates are formatted "DD-MM-YYYY" (string). Filter inputs are
+// HTML5 date pickers in "YYYY-MM-DD". We compare them in the YYYY-MM-DD
+// canonical form so both sides agree.
+
+// Convert "DD-MM-YYYY" string to "YYYY-MM-DD". Returns null if unparseable.
+function parseStoredDate(s) {
+  if (!s || typeof s !== 'string') return null;
+  const m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (!m) return null;
+  return `${m[3]}-${m[2]}-${m[1]}`;
+}
+
+function formatDateForDisplay(iso) {
+  // iso is "YYYY-MM-DD"; format as "DD MMM YYYY"
+  if (!iso) return '';
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return iso;
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${parseInt(m[3],10)} ${months[parseInt(m[2],10)-1]} ${m[1]}`;
+}
+
+function computeDateRange(grouped) {
+  let min = null, max = null;
+  grouped.forEach(p => {
+    p.rows.forEach(r => {
+      const iso = parseStoredDate(r['Date']);
+      if (!iso) return;
+      if (!min || iso < min) min = iso;
+      if (!max || iso > max) max = iso;
+    });
+  });
+  return { min, max };
+}
+
+// Returns true if a row's date passes the current filter.
+function rowMatchesFilter(row) {
+  const f = state._dateFilter || {from:'', to:''};
+  if (!f.from && !f.to) return true;
+  const iso = parseStoredDate(row['Date']);
+  if (!iso) return false; // unparseable date → exclude under any active filter
+  if (f.from && iso < f.from) return false;
+  if (f.to   && iso > f.to)   return false;
+  return true;
+}
+
+// Returns the filtered rows array for a given product. If no filter is
+// active this returns the original rows array (cheap, no copy).
+function getFilteredRows(p) {
+  const f = state._dateFilter || {from:'', to:''};
+  if (!f.from && !f.to) return p.rows;
+  return p.rows.filter(rowMatchesFilter);
+}
+
+// Called whenever a filter input changes — refreshes row counts in the
+// table, the sheet preview, and the status line.
+function onFilterChange() {
+  const fromEl = document.getElementById('filterFrom');
+  const toEl   = document.getElementById('filterTo');
+  if (!fromEl || !toEl) return;
+  state._dateFilter = { from: fromEl.value || '', to: toEl.value || '' };
+  refreshFilterDependentUI();
+}
+
+function refreshFilterDependentUI() {
+  // Update row counts
+  let totalRowsAll = 0, totalRowsFiltered = 0;
+  document.querySelectorAll('.rowcount').forEach(el => {
+    const key = el.dataset.key;
+    const p = state.workbookData.get(key);
+    if (!p) return;
+    const filteredCount = getFilteredRows(p).length;
+    const totalCount = p.rows.length;
+    totalRowsAll += totalCount;
+    totalRowsFiltered += filteredCount;
+    if (filteredCount === totalCount) {
+      el.textContent = totalCount;
+      el.style.color = '';
+    } else {
+      el.textContent = `${filteredCount}/${totalCount}`;
+      el.style.color = filteredCount === 0 ? '#dc2626' : '#0c4a6e';
+      el.style.fontWeight = '600';
+    }
+  });
+  // Update status line
+  const statusEl = document.getElementById('filterStatus');
+  if (statusEl) {
+    const f = state._dateFilter || {};
+    if (!f.from && !f.to) {
+      statusEl.textContent = '';
+    } else {
+      const fromLbl = f.from ? formatDateForDisplay(f.from) : 'start';
+      const toLbl   = f.to   ? formatDateForDisplay(f.to)   : 'end';
+      statusEl.textContent = `${totalRowsFiltered.toLocaleString()} of ${totalRowsAll.toLocaleString()} rows match (${fromLbl} → ${toLbl})`;
+    }
+  }
+  // Refresh the currently-displayed sheet preview
+  if (state._previewedIdx !== undefined) previewSheet(state._previewedIdx);
+}
+
+function setFilterPreset(preset) {
+  let from = '', to = '';
+  // Anchor presets to TODAY's calendar date — this way as days pass, the
+  // ranges automatically stay current. e.g. "Last 12 months" today gives
+  // a different range than "Last 12 months" tomorrow.
+  // Computed in the user's local timezone via Date components, not ISO,
+  // so the rollover happens at local midnight rather than UTC midnight.
+  const now = new Date();
+  const todayY = now.getFullYear();
+  const todayM = String(now.getMonth() + 1).padStart(2, '0');
+  const todayD = String(now.getDate()).padStart(2, '0');
+  const today = `${todayY}-${todayM}-${todayD}`;
+
+  if (preset === 'all') { from = ''; to = ''; }
+  else if (preset === 'ytd') {
+    from = `${todayY}-01-01`;
+    to = '';   // empty To means "no upper bound" → naturally extends as data grows
+  }
+  else if (preset === '1y' || preset === '2y' || preset === '5y') {
+    const years = preset === '1y' ? 1 : preset === '2y' ? 2 : 5;
+    const d = new Date(now);
+    d.setFullYear(d.getFullYear() - years);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    from = `${y}-${m}-${day}`;
+    to = '';
+  }
+  state._dateFilter = { from, to };
+  // Update inputs
+  const fromEl = document.getElementById('filterFrom');
+  const toEl   = document.getElementById('filterTo');
+  if (fromEl) fromEl.value = from;
+  if (toEl)   toEl.value   = to;
+  refreshFilterDependentUI();
+}
+
+function previewSheet(idx) {
+  const key = state._previewKeys && state._previewKeys[idx];
+  if (!key) return;
+  state._previewedIdx = idx;
+  const p = state.workbookData.get(key);
+  if (!p) return;
+  const filtered = getFilteredRows(p);
+  const totalCount = p.rows.length;
+  const filterActive = filtered.length !== totalCount;
+  const nameEl = document.getElementById('previewSheetName');
+  if (nameEl) {
+    const note = filterActive
+      ? `(showing first 15 of ${filtered.length} filtered rows · ${totalCount} total)`
+      : `(showing first 15 of ${totalCount} rows)`;
+    nameEl.textContent = `— "${p.displayName}" sheet ${note}`;
+  }
+  let html = '<div class="preview-wrap"><table><thead><tr><th>Product Id</th><th>Location Id</th><th>Price</th><th>Date</th><th>unit id</th></tr></thead><tbody>';
+  if (filtered.length === 0) {
+    html += '<tr><td colspan="5" style="text-align:center;color:#dc2626;font-style:italic;padding:18px">No rows in this product match the date filter.</td></tr>';
+  } else {
+    filtered.slice(0, 15).forEach(r => {
+      html += `<tr><td>${escapeHtml(r['Product Id'])}</td><td>${escapeHtml(r['Location Id'])}</td><td>${escapeHtml(r['Price'])}</td><td>${escapeHtml(r['Date'])}</td><td>${escapeHtml(r['unit id'])}</td></tr>`;
+    });
+  }
+  html += '</tbody></table></div>';
+  const target = document.getElementById('sheetPreview');
+  if (target) target.innerHTML = html;
+}
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.style.display = 'none';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// ── Build an XLSX worksheet from rows with real Excel date cells AND ───
+// numeric ID columns where applicable.
+// Takes the raw row objects (which include the '_DateSerial' sentinel
+// alongside the displayed 'Date' string), and produces a sheet where:
+//   • The '_DateSerial' field is stripped from output
+//   • The 'Date' column is written as a numeric date cell (cell.t='n',
+//     cell.v=serial) with a 'dd-mm-yyyy' number format applied
+//   • Product Id, Location Id, and unit id columns are written as
+//     numeric cells when their value is purely numeric — so Excel sorts
+//     them properly (10 after 9, not after 1) and formulas like SUMIF
+//     against numeric IDs match correctly. Non-numeric IDs (e.g. "AAA-1")
+//     stay as text.
+//
+// Result: in Excel the columns display the same readable values, but
+// numeric columns are real numbers internally — no Text-to-Columns
+// step required for sorting or formulas.
+function buildSheetWithRealDates(rows) {
+  // Strip _DateSerial from each row before json_to_sheet runs (otherwise
+  // it would get its own column).
+  const stripped = rows.map(r => {
+    const { _DateSerial, ...rest } = r;
+    return rest;
+  });
+  const ws = XLSX.utils.json_to_sheet(stripped, {
+    header: ['Product Id','Location Id','Price','Date','unit id']
+  });
+
+  const range = XLSX.utils.decode_range(ws['!ref']);
+
+  // Find each column we want to fix up by its header text
+  const colIdx = { date: -1, productId: -1, locationId: -1, unitId: -1, price: -1 };
+  for (let C = range.s.c; C <= range.e.c; C++) {
+    const headCell = ws[XLSX.utils.encode_cell({r: 0, c: C})];
+    if (!headCell) continue;
+    if (headCell.v === 'Date')        colIdx.date = C;
+    if (headCell.v === 'Product Id')  colIdx.productId = C;
+    if (headCell.v === 'Location Id') colIdx.locationId = C;
+    if (headCell.v === 'unit id')     colIdx.unitId = C;
+    if (headCell.v === 'Price')       colIdx.price = C;
+  }
+
+  // Helper: rewrite a cell as numeric if its raw value looks like a number.
+  // We deliberately do NOT touch cells that contain non-numeric text like
+  // "AAA-1234" — those stay as strings (the user typed them that way).
+  function maybeNumericCell(R, C) {
+    if (C < 0) return;
+    const cellRef = XLSX.utils.encode_cell({r: R, c: C});
+    const cell = ws[cellRef];
+    if (!cell) return;
+    if (cell.v === '' || cell.v === null || cell.v === undefined) return;
+    if (cell.t === 'n') return; // already numeric, leave alone
+    const s = String(cell.v).trim();
+    if (s === '') return;
+    // Strict numeric match: optional minus, digits, optional decimal.
+    // No commas/spaces/units. This avoids false positives on phone-like
+    // strings or accidental matches.
+    if (!/^-?\d+(\.\d+)?$/.test(s)) return;
+    const num = Number(s);
+    if (!Number.isFinite(num)) return;
+    ws[cellRef] = { t: 'n', v: num };
+  }
+
+  for (let R = 1; R <= range.e.r; R++) {
+    // Date column → real Excel date with format
+    if (colIdx.date >= 0) {
+      const serial = rows[R - 1] && rows[R - 1]._DateSerial;
+      if (typeof serial === 'number' && serial > 0) {
+        ws[XLSX.utils.encode_cell({r: R, c: colIdx.date})] = {
+          t: 'n', v: serial, z: 'dd-mm-yyyy'
+        };
+      }
+    }
+    // ID columns → numeric when applicable
+    maybeNumericCell(R, colIdx.productId);
+    maybeNumericCell(R, colIdx.locationId);
+    maybeNumericCell(R, colIdx.unitId);
+    // Price column → numeric too (already a number for valid rows, but
+    // belt-and-braces in case it ever came in as a string)
+    maybeNumericCell(R, colIdx.price);
+  }
+
+  // Reasonable column widths
+  if (!ws['!cols']) ws['!cols'] = [];
+  if (colIdx.productId  >= 0) ws['!cols'][colIdx.productId]  = { wch: 11 };
+  if (colIdx.locationId >= 0) ws['!cols'][colIdx.locationId] = { wch: 11 };
+  if (colIdx.price      >= 0) ws['!cols'][colIdx.price]      = { wch: 12 };
+  if (colIdx.date       >= 0) ws['!cols'][colIdx.date]       = { wch: 12 };
+  if (colIdx.unitId     >= 0) ws['!cols'][colIdx.unitId]     = { wch: 9 };
+
+  return ws;
+}
+
+function downloadExcel() {
+  if (!state.workbookData || state.workbookData.size === 0) { alert('Generate the workbook first.'); return; }
+  try {
+    const wb = XLSX.utils.book_new();
+    const usedNames = new Set();
+    let skippedEmpty = 0;
+    for (const [, p] of state.workbookData) {
+      const filtered = getFilteredRows(p);
+      if (filtered.length === 0) { skippedEmpty++; continue; }
+      const ws = buildSheetWithRealDates(filtered);
+      XLSX.utils.book_append_sheet(wb, ws, sanitizeSheetName(p.displayName, usedNames));
+    }
+    if (wb.SheetNames.length === 0) {
+      alert('No rows match the date filter — nothing to download. Adjust the filter and try again.');
+      return;
+    }
+    const wbout = XLSX.write(wb, {bookType: 'xlsx', type: 'array'});
+    const blob = new Blob([wbout], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    triggerDownload(blob, 'upload_workbook.xlsx');
+    if (skippedEmpty > 0) {
+      console.log(`Skipped ${skippedEmpty} product sheet(s) with no rows in the active date filter.`);
+    }
+  } catch (e) { console.error(e); alert('Excel download failed: ' + e.message); }
+}
+
+function downloadCombinedExcel() {
+  if (!state.workbookData || state.workbookData.size === 0) { alert('Generate the workbook first.'); return; }
+  try {
+    const all = [];
+    for (const [, p] of state.workbookData) all.push(...getFilteredRows(p));
+    if (all.length === 0) {
+      alert('No rows match the date filter — nothing to download. Adjust the filter and try again.');
+      return;
+    }
+    const wb = XLSX.utils.book_new();
+    const ws = buildSheetWithRealDates(all);
+    XLSX.utils.book_append_sheet(wb, ws, 'Upload');
+    const wbout = XLSX.write(wb, {bookType: 'xlsx', type: 'array'});
+    const blob = new Blob([wbout], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    triggerDownload(blob, 'upload_combined.xlsx');
+  } catch (e) { console.error(e); alert('Combined .xlsx download failed: ' + e.message); }
+}
+
+function downloadCSV() {
+  if (!state.workbookData || state.workbookData.size === 0) { alert('Generate the workbook first.'); return; }
+  try {
+    const all = [];
+    for (const [, p] of state.workbookData) all.push(...getFilteredRows(p));
+    if (all.length === 0) {
+      alert('No rows match the date filter — nothing to download. Adjust the filter and try again.');
+      return;
+    }
+    const ws = XLSX.utils.json_to_sheet(all, {header: ['Product Id','Location Id','Price','Date','unit id']});
+    const csv = XLSX.utils.sheet_to_csv(ws);
+    const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+    triggerDownload(blob, 'upload_flat.csv');
+  } catch (e) { console.error(e); alert('CSV download failed: ' + e.message); }
+}
+</script>
+</body>
+</html>
